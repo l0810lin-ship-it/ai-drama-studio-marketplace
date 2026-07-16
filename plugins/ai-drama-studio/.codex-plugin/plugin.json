@@ -1,6 +1,6 @@
 {
   "name": "ai-drama-studio",
-  "version": "0.1.0+codex.20260716053641",
+  "version": "0.1.0+codex.20260716063209",
   "description": "AI comic-drama production and team-learning agent with truth-source gates, client-note revision, configurable formats, localization, visual assets, storyboards, delivery QA, and controlled Skill iteration.",
   "author": {
     "name": "Construct"

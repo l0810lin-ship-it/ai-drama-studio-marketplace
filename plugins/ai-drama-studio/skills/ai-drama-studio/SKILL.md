@@ -10,16 +10,13 @@ description: >-
 
 # AI 漫剧制片与团队学习
 
-## 定位工作区
+## 初始化 Harness
 
-按顺序定位运行时工作区：
+本 Skill 自带 `scripts/studio.mjs`，不得依赖开发者电脑上的另一个项目目录。首次触发时运行：
 
-1. 使用环境变量 `AI_DRAMA_STUDIO_HOME` 指向的目录。
-2. 当前目录的 `package.json` 若 `name=ai-drama-studio`，使用当前目录。
-3. 当前项目下存在 `ai-drama-studio/package.json` 时，使用该子目录。
-4. 仍未找到时，告知用户插件已安装但团队运行时尚未初始化；请用户选择工作区。不得假设开发者用户名、桌面路径或绝对路径。
+`node <本 Skill 目录>/scripts/studio.mjs init`
 
-进入工作区后，首次使用运行 `pnpm team:init -- <organization-id> <user-id> <member|admin>`。团队中央服务接入后，以服务端身份和权限为准，不信任客户端自报管理员。
+默认工作区为 `AI_DRAMA_STUDIO_HOME`，未设置时使用用户目录下的 `.codex/ai-drama-studio/workspace`。需要了解文件、权限和中央记忆边界时读取 `references/runtime-contract.md`。不要把客户文件复制进插件缓存。
 
 ## 真源与权限
 
@@ -32,9 +29,9 @@ description: >-
 
 支持立项/世界观、梗概、季纲/分集卡、单集剧本、钩子、授权改编、本地化、翻译/自然化、Pitch、反馈修订。
 
-1. 运行 `pnpm rag:verify`；新知识用 `pnpm rag:add` 登记并执行 `pnpm rag:index`。
-2. 确认项目 ID、真源、锁定项、目标市场和授权状态。
-3. 运行 `pnpm agent:context -- --project <project-id> <workflow-id> "<task>"`。
+1. 确认项目 ID、真源、锁定项、目标市场和授权状态；没有项目时运行 `studio.mjs project:create`。
+2. 用 `studio.mjs artifact:record` 登记原稿、草稿、批注、修改稿、提交稿和结果；只保存本地路径与版本关系。
+3. 运行 `studio.mjs context --project <project-id> --workflow <workflow-id> --task "<task>"`。它会在已登录时先同步人工发布的共享记忆。
 4. 只有结果为 `ready_for_model` 才进入创作。
 5. 剧本前先产出任务卡；Pitch 只使用确认事实；翻译必须自然化；修订提案列出证据、影响范围、不改项和批准状态。
 
@@ -44,17 +41,17 @@ description: >-
 
 ## 团队迭代学习
 
-遇到原稿、草稿、批注、红线、修改稿、提交稿、采用稿、Pitch、世界观、翻译、本地化、研究、SOP、运营结果或其他材料时，读取 `agent/iteration-learning-contract.md`：
+遇到原稿、草稿、批注、红线、修改稿、提交稿、采用稿、Pitch、世界观、翻译、本地化、研究、SOP、运营结果或其他材料时，读取 `references/runtime-contract.md` 和 `references/learning-candidate-schema.json`：
 
-1. 运行 `pnpm artifacts:import -- <folder> [project-id|auto] [client-id]`。
-2. 运行 `pnpm artifacts:analyze -- [project-id|all]`。
+1. 用 `studio.mjs artifact:record` 登记材料角色、项目和版本关系；原文件保持本地。
+2. 对原稿、批注、修改稿和采用结果做差异分析，并保留证据 ID。
 3. 把学习严格分成项目私有、可泛化候选、不确定待确认。
-4. 按 `agent/learning-candidate-schema.json` 写候选，并运行 `pnpm learning:submit -- <candidate.json>`。
-5. 只有存在候选时才运行 `pnpm learning:review` 向用户显示审批卡；普通任务不要询问学习。
-6. 用户明确决定后运行 `pnpm learning:decide`。沉默和模糊肯定都不是批准。
+4. 按 `references/learning-candidate-schema.json` 写候选 JSON，并运行 `studio.mjs learning:add --file <candidate.json>`。项目私有候选只留本地；匿名化共享候选在已登录时自动进入中央待审库。
+5. 只有存在候选时才展示审批卡；普通任务不要询问学习。
+6. 用户明确批准项目私有候选后运行 `studio.mjs learning:approve-private --id <id>`。管理员查看中央候选用 `learning:review`，决定用 `learning:decide`。沉默和模糊肯定都不是批准。
 7. member 可批准项目私有规则或提交共享审核；只有 admin 可发布共享规则。
 8. 共享发布必须匿名化、具有跨项目证据、检查反例并保留回滚点；不得自动覆盖正式 Skill。阈值、客户格式、术语、角色资产、参考图和平台特例默认不是通用规则。
-9. 已配置中央团队库时，让成员在制片台“学习审批”页登录并上传候选 JSON；管理员在同一页查看证据摘要、退回、驳回、批准或发布。不得把 Supabase secret/service key 放入插件或浏览器。
+9. 团队登录优先运行 `team:browser-login --email <email>`，在自动打开的本机页面注册或登录；绝不要求用户把密码贴进对话。浏览器不可用时才执行 `team:signup --email <email>`/`team:login --email <email>`，由 CLI 隐藏输入密码。登录后用管理员生成的邀请码执行 `team:join`。管理员可用 `team:create-org` 和 `team:create-invite`。只使用公开 publishable key；不得放入 Supabase secret/service key。
 
 ## 输出契约
 

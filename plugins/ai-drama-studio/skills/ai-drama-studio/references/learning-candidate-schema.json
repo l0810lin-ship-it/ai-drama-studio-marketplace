@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Drama Studio learning candidate",
+  "type": "object",
+  "required": [
+    "project_id",
+    "lane",
+    "statement",
+    "scope",
+    "confidence",
+    "evidence_artifact_ids",
+    "privacy"
+  ],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "project_id": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$" },
+    "lane": { "enum": ["project_private", "generalizable_candidate", "uncertain_requires_human"] },
+    "statement": { "type": "string", "minLength": 1 },
+    "scope": { "type": "string", "minLength": 1 },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "evidence_summary": { "type": "array", "items": { "type": ["string", "object"] } },
+    "evidence_artifact_ids": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "counterexamples": { "type": "array", "items": { "type": ["string", "object"] } },
+    "privacy": { "enum": ["private", "anonymized"] },
+    "suggested_action": { "enum": ["approve_private", "submit_shared", "needs_edit", "human_review"] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "lane": { "const": "project_private" } } },
+      "then": { "properties": { "privacy": { "const": "private" } } },
+      "else": { "properties": { "privacy": { "const": "anonymized" } } }
+    }
+  ],
+  "additionalProperties": true
+}

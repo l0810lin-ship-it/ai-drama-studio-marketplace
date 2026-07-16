@@ -9,23 +9,23 @@ description: >-
 
 # AI 漫剧制片
 
-先按 `$ai-drama-studio` 的“定位工作区”规则找到团队运行时；不得写死开发者电脑路径。
+先按 `$ai-drama-studio` 的“初始化 Harness”规则使用插件内置运行时；不得写死开发者电脑路径。
 
 ## 核心边界
 
 1. **真源高于 RAG。** `Project Bible`、锁定项、当前剧本头版本与批准状态是结构化事实；任何 SOP、示例或检索结果均不得覆盖它们。
-2. **先确认工作流，再生成。** 可用工作流是立项与世界观、季纲与分集卡、单集剧本、授权改编、本地化、Pitch、反馈修订、格式检查、交付封装、视觉资产、分镜与平台合规。定义见 `agent/workflows.json`。
+2. **先确认工作流，再生成。** 可用工作流是立项与世界观、季纲与分集卡、单集剧本、授权改编、本地化、Pitch、反馈修订、格式检查、交付封装、视觉资产、分镜与平台合规。
 3. **客服反馈不是改稿命令。** 导入 → 归因/聚类 → 修订提案 → 人工批准 → 生成修订稿与变更日志。未批准前不得写回真源。
 4. **改编需授权。** 只有项目 `rights_status` 为 `authorized` 时才允许执行原稿改编；其他情况下仅做高层结构分析或原创方案。
 5. **不伪造模型输出。** 未配置模型端点时，完成可做的真源核对、RAG 检索、任务卡/提案规划，并明确说明生成调用还未配置。
 
 ## 使用顺序
 
-1. 检查知识库：在工作区运行 `pnpm rag:verify`。如果用户给了新 SOP、案例、提示词或 skills，先用 `pnpm rag:add -- <path> <type> <role>` 登记，再运行 `pnpm rag:index`。
-2. 确定项目：已有项目用 `data/projects/<project-id>.json`；没有则创建项目骨架，并要求用户确认真源、锁定项、目标市场与授权状态后再写正文。
-3. 装配上下文：运行 `pnpm agent:context -- --project <project-id> <workflow-id> "<task>"`。它必须返回 `ready_for_model`，否则先处理阻塞项。
+1. 检查知识库：如果用户给了新 SOP、案例、提示词或 Skill，用 Harness 的 `knowledge:add` 登记；DOCX 先提取为文本。需要核验检索时运行 `knowledge:query`。
+2. 确定项目：已有项目读取工作区 `projects/<project-id>/truth.json`；没有则用 `project:create` 创建骨架，并要求用户确认真源、锁定项、目标市场与授权状态后再写正文。
+3. 装配上下文：运行 Harness 的 `context --project <project-id> --workflow <workflow-id> --task "<task>"`。它必须返回 `ready_for_model`，否则先处理阻塞项。
 4. 输出时列出：当前真源、锁定项、使用的 RAG 来源、待确认事实、变更日志草案（如涉及修改）。
-5. 仅当用户已经配置 `DRAMA_MODEL_BASE_URL`、`DRAMA_MODEL_API_KEY`、`DRAMA_MODEL_NAME` 时，才可运行 `pnpm agent:run` 生成模型结果。密钥不能写到代码、项目 JSON 或聊天中。
+5. 由当前 Codex 任务基于上下文包生成结果；不得另索要模型 API 密钥，也不得把任何密钥写到项目 JSON 或聊天中。
 
 ## 专项路由
 
