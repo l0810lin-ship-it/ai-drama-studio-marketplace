@@ -557,7 +557,43 @@ async function browserLogin() {
   const server = createServer(async (req, res) => {
     if (req.method === "GET" && req.url === "/") {
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
-      res.end(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>AI 漫剧团队登录</title><style>body{font:16px system-ui;background:#f2eee5;color:#1f352d;display:grid;place-items:center;min-height:100vh;margin:0}.card{width:min(420px,calc(100% - 40px));background:#fff;padding:30px;border-radius:20px;box-shadow:0 20px 60px #183d2c20}h1{font-size:24px}label{display:block;margin:16px 0 6px}input,button{box-sizing:border-box;width:100%;padding:12px;border-radius:10px;border:1px solid #c9d0ca}button{margin-top:12px;background:#29473c;color:#fff;border:0;font-weight:700}.secondary{background:#e8eee9;color:#29473c}small{display:block;margin-top:14px;color:#65736b;line-height:1.5}#message{min-height:24px;margin-top:12px}</style><main class="card"><h1>AI 漫剧团队记忆</h1><p>密码只发送给 Supabase，不经过 Codex 对话。</p><label>邮箱</label><input id="email" type="email" autocomplete="email" value=${JSON.stringify(initialEmail)}><label>密码</label><input id="password" type="password" autocomplete="current-password"><button onclick="auth('login')">登录</button><button class="secondary" onclick="auth('signup')">首次注册</button><div id="message"></div><small>首次注册如果需要验证邮箱，请完成邮件确认后回到本页登录。本页只在你的电脑 127.0.0.1 上临时运行。</small></main><script>const base=${JSON.stringify(current.central_url)},key=${JSON.stringify(current.central_publishable_key)},nonce=${JSON.stringify(nonce)};async function auth(kind){const message=document.querySelector('#message');message.textContent='处理中…';const email=document.querySelector('#email').value,password=document.querySelector('#password').value;const route=kind==='signup'?'/auth/v1/signup':'/auth/v1/token?grant_type=password';const response=await fetch(base+route,{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({email,password})});const data=await response.json();if(!response.ok){message.textContent=data.message||data.error_description||'登录失败';return}if(!data.access_token){message.textContent='注册成功，请先完成邮箱确认，然后点击登录。';return}const saved=await fetch('/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nonce,session:data})});message.textContent=saved.ok?'登录成功，可以关闭此页面。':'本机会话保存失败。';}</script></html>`);
+      res.end(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>AI 漫剧团队登录</title><style>body{font:16px system-ui;background:#f2eee5;color:#1f352d;display:grid;place-items:center;min-height:100vh;margin:0}.card{width:min(420px,calc(100% - 40px));background:#fff;padding:30px;border-radius:20px;box-shadow:0 20px 60px #183d2c20}h1{font-size:24px}label{display:block;margin:16px 0 6px}input,button{box-sizing:border-box;width:100%;padding:12px;border-radius:10px;border:1px solid #c9d0ca}button{margin-top:12px;background:#29473c;color:#fff;border:0;font-weight:700}.secondary{background:#e8eee9;color:#29473c}small{display:block;margin-top:14px;color:#65736b;line-height:1.5}#message{min-height:24px;margin-top:12px}.success{color:#17653b;font-weight:700}.error{color:#a02b2b}</style><main class="card"><h1>AI 漫剧团队记忆</h1><p>密码只发送给 Supabase，不经过 Codex 对话。</p><label>邮箱</label><input id="email" type="email" autocomplete="email" value=${JSON.stringify(initialEmail)}><label>密码</label><input id="password" type="password" autocomplete="current-password"><button onclick="auth('login')">登录</button><button class="secondary" onclick="auth('signup')">首次注册</button><div id="message"></div><small>首次注册如果需要验证邮箱，请完成邮件确认。验证链接返回本页后会自动完成登录。本页只在你的电脑 127.0.0.1 上临时运行。</small></main><script>
+const base=${JSON.stringify(current.central_url)},key=${JSON.stringify(current.central_publishable_key)},nonce=${JSON.stringify(nonce)};
+const message=document.querySelector('#message');
+function show(text,tone=''){message.textContent=text;message.className=tone;}
+async function saveSession(session){
+  show('正在保存登录状态…');
+  const saved=await fetch('/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nonce,session})});
+  if(!saved.ok){show('本机会话保存失败，请重新打开登录页。','error');return false}
+  history.replaceState(null,'',location.pathname);
+  show('登录成功，可以关闭此页面。','success');
+  return true;
+}
+async function consumeEmailCallback(){
+  const hash=new URLSearchParams(location.hash.slice(1));
+  const access_token=hash.get('access_token');
+  if(!access_token)return;
+  const session={
+    access_token,
+    refresh_token:hash.get('refresh_token'),
+    expires_in:Number(hash.get('expires_in')||3600),
+    expires_at:Number(hash.get('expires_at')||0),
+    token_type:hash.get('token_type')||'bearer'
+  };
+  await saveSession(session);
+}
+async function auth(kind){
+  show('处理中…');
+  const email=document.querySelector('#email').value,password=document.querySelector('#password').value;
+  const route=kind==='signup'?'/auth/v1/signup?redirect_to='+encodeURIComponent(location.origin+'/'):'/auth/v1/token?grant_type=password';
+  const response=await fetch(base+route,{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+  const data=await response.json();
+  if(!response.ok){show(data.message||data.error_description||'登录失败','error');return}
+  if(!data.access_token){show('注册成功，请打开验证邮件。点击邮件链接后会自动完成登录。');return}
+  await saveSession(data);
+}
+consumeEmailCallback().catch(error=>show(error.message||'邮箱验证回调处理失败','error'));
+</script></html>`);
       return;
     }
     if (req.method === "POST" && req.url === "/session") {
