@@ -25,4 +25,6 @@ Prefer `team:browser-login --email <email>`. It serves a temporary loopback-only
 - `uncertain_requires_human`: must be anonymized, then enters central admin review without becoming a rule.
 - `published_shared`: only an organization admin can publish after `shared_review`, and only members of the same organization can retrieve it.
 
+Local candidate IDs may be human-readable. Central storage assigns its own UUID and keeps the local ID in `client_candidate_key`, so legacy candidates remain traceable without violating the database ID contract.
+
 Run `node scripts/studio.mjs <command>` from this Skill directory. Add `--workspace <path>` only when the user explicitly wants a non-default workspace.
