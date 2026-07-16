@@ -12,6 +12,8 @@ The bundled runtime is the deterministic persistence and team-memory harness. It
 - Learning inbox and decisions: `memory/candidates.json`, `memory/decisions.json`.
 - Raw artifact registry: `artifacts/registry.json`; raw files stay at their original local paths.
 
+For users upgrading from the former standalone `ai-drama-studio` runtime, run `migrate:legacy --from <old-runtime-path>`. It merges project truth, private approvals, candidates, decisions, artifact lineage, and indexed knowledge into the new workspace without deleting or modifying the legacy directory and without uploading anything.
+
 ## Central memory
 
 The public Supabase URL and publishable key are safe client configuration. Every data operation still requires the member's own Supabase Auth session and Row Level Security membership.

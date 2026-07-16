@@ -250,6 +250,107 @@ async function addKnowledge() {
   return { ...source, chunks: chunks.chunks.filter((item) => item.source_id === source.id).length };
 }
 
+function mergeById(current = [], incoming = []) {
+  const merged = [...current];
+  for (const item of incoming) {
+    const index = merged.findIndex((existing) => existing.id === item.id);
+    if (index >= 0) merged[index] = { ...merged[index], ...item };
+    else merged.push(item);
+  }
+  return merged;
+}
+
+async function migrateLegacy() {
+  const legacyRoot = path.resolve(option("from"));
+  if (legacyRoot === workspace) throw new Error("Legacy source and target workspace must be different.");
+  await readFile(path.join(legacyRoot, "package.json"));
+  await initWorkspace();
+  const summary = { projects: 0, private_rules: 0, candidates: 0, decisions: 0, artifacts: 0, knowledge_sources: 0, knowledge_chunks: 0, source: legacyRoot, target: workspace };
+
+  const legacyProjectsRoot = path.join(legacyRoot, "data", "projects");
+  let projectFiles = [];
+  try { projectFiles = (await readdir(legacyProjectsRoot)).filter((file) => file.endsWith(".json")); } catch {}
+  for (const filename of projectFiles) {
+    const legacy = await readJson(path.join(legacyProjectsRoot, filename));
+    if (!legacy?.id) continue;
+    const projectId = safeKey(legacy.id, "legacy project id");
+    const currentHead = typeof legacy.current_head === "string" ? legacy.current_head : [legacy.current_head?.document, legacy.current_head?.version, legacy.current_head?.status].filter(Boolean).join(" / ") || null;
+    const target = path.join(workspace, "projects", projectId, "truth.json");
+    if (!(await readJson(target))) {
+      await writeJson(target, {
+        schema_version: "1.0", id: projectId, name: legacy.title || legacy.name || projectId,
+        market: legacy.market || legacy.story_state?.target_market || "unspecified",
+        rights_status: legacy.rights_status || "unknown", current_head: currentHead,
+        truth_source: legacy.truth_source || path.join(legacyRoot, "data", "projects", filename),
+        locks: legacy.locks || [], story_state: legacy.story_state || {},
+        approved_decisions: legacy.approved_decisions || [], feedback_evidence: legacy.feedback_evidence || [],
+        migrated_from: path.join(legacyRoot, "data", "projects", filename), migrated_at: new Date().toISOString()
+      });
+    }
+    summary.projects += 1;
+  }
+
+  const legacyLearningRoot = path.join(legacyRoot, "learning", "projects");
+  let learningProjects = [];
+  try { learningProjects = await readdir(legacyLearningRoot, { withFileTypes: true }); } catch {}
+  for (const entry of learningProjects.filter((item) => item.isDirectory())) {
+    const projectId = safeKey(entry.name, "legacy learning project id");
+    const legacyPrivate = await readJson(path.join(legacyLearningRoot, projectId, "approved-preferences.json"), { rules: [], preferences: [] });
+    const targetPrivateFile = path.join(workspace, "projects", projectId, "approved-private.json");
+    const targetPrivate = await readJson(targetPrivateFile, { schema_version: "1.0", rules: [] });
+    const importedRules = [...(legacyPrivate.rules || []), ...(legacyPrivate.preferences || [])].map((rule) => ({ ...rule, status: "human_approved", migrated_at: new Date().toISOString() }));
+    targetPrivate.rules = mergeById(targetPrivate.rules, importedRules);
+    await writeJson(targetPrivateFile, targetPrivate);
+    summary.private_rules += importedRules.length;
+  }
+
+  const legacyCandidates = await readJson(path.join(legacyRoot, "learning", "inbox", "candidates.json"), { candidates: [] });
+  const targetCandidatesFile = path.join(workspace, "memory", "candidates.json");
+  const targetCandidates = await readJson(targetCandidatesFile, { schema_version: "1.0", candidates: [] });
+  const importedCandidates = (legacyCandidates.candidates || []).map((item) => ({ ...item, migrated_from_legacy: true }));
+  targetCandidates.candidates = mergeById(targetCandidates.candidates, importedCandidates);
+  await writeJson(targetCandidatesFile, targetCandidates);
+  summary.candidates = importedCandidates.length;
+
+  const legacyDecisions = await readJson(path.join(legacyRoot, "learning", "decisions.json"), { decisions: [] });
+  const targetDecisionsFile = path.join(workspace, "memory", "decisions.json");
+  const targetDecisions = await readJson(targetDecisionsFile, { schema_version: "1.0", decisions: [] });
+  targetDecisions.decisions = [...targetDecisions.decisions, ...(legacyDecisions.decisions || [])];
+  await writeJson(targetDecisionsFile, targetDecisions);
+  summary.decisions = (legacyDecisions.decisions || []).length;
+
+  const legacyArtifacts = await readJson(path.join(legacyRoot, "data", "artifacts", "registry.json"), { artifacts: [] });
+  const targetArtifactsFile = path.join(workspace, "artifacts", "registry.json");
+  const targetArtifacts = await readJson(targetArtifactsFile, { schema_version: "1.0", artifacts: [] });
+  const importedArtifacts = (legacyArtifacts.artifacts || []).map((item) => ({ ...item, source_path: item.source_path || item.path, role: item.role || item.artifact_type || "other", migrated_from_legacy: true }));
+  targetArtifacts.artifacts = mergeById(targetArtifacts.artifacts, importedArtifacts);
+  await writeJson(targetArtifactsFile, targetArtifacts);
+  summary.artifacts = importedArtifacts.length;
+
+  const legacySources = await readJson(path.join(legacyRoot, "knowledge", "sources.json"), { sources: [] });
+  const targetSourcesFile = path.join(workspace, "knowledge", "sources.json");
+  const targetSources = await readJson(targetSourcesFile, { schema_version: "1.0", sources: [] });
+  const sourcePathById = new Map();
+  const importedSources = (legacySources.sources || []).map((item) => {
+    const absolute = path.resolve(legacyRoot, "knowledge", item.path || item.source_path);
+    sourcePathById.set(item.id, absolute);
+    return { ...item, source_path: absolute, project_id: item.project_id || null, migrated_from_legacy: true };
+  });
+  targetSources.sources = mergeById(targetSources.sources, importedSources);
+  await writeJson(targetSourcesFile, targetSources);
+  summary.knowledge_sources = importedSources.length;
+
+  const legacyChunks = await readJson(path.join(legacyRoot, "knowledge", "generated", "chunks.json"), []);
+  const targetChunksFile = path.join(workspace, "knowledge", "chunks.json");
+  const targetChunks = await readJson(targetChunksFile, { schema_version: "1.0", chunks: [] });
+  const importedChunks = (Array.isArray(legacyChunks) ? legacyChunks : legacyChunks.chunks || []).map((item) => ({ ...item, project_id: item.project_id || null, source_path: sourcePathById.get(item.source_id) || item.source_path, migrated_from_legacy: true }));
+  targetChunks.chunks = mergeById(targetChunks.chunks, importedChunks);
+  await writeJson(targetChunksFile, targetChunks);
+  summary.knowledge_chunks = importedChunks.length;
+
+  return summary;
+}
+
 async function queryKnowledge(query = option("query", ""), projectId = option("project", null)) {
   const words = tokens(query);
   const data = await readJson(path.join(workspace, "knowledge", "chunks.json"), { chunks: [] });
@@ -532,7 +633,7 @@ function help() {
     harness: "AI Drama Studio portable runtime",
     workspace,
     commands: {
-      local: ["init", "status", "project:create", "artifact:record", "knowledge:add", "knowledge:query", "context"],
+      local: ["init", "status", "migrate:legacy", "project:create", "artifact:record", "knowledge:add", "knowledge:query", "context"],
       learning: ["learning:add", "learning:approve-private", "learning:submit", "learning:flush", "learning:sync", "learning:review", "learning:decide"],
       team: ["team:browser-login", "team:signup", "team:login", "team:create-org", "team:create-invite", "team:join", "team:logout"]
     },
@@ -544,6 +645,7 @@ const handlers = {
   help: async () => help(),
   init: async () => ({ initialized: true, workspace, config: await initWorkspace() }),
   status,
+  "migrate:legacy": migrateLegacy,
   "project:create": createProject,
   "artifact:record": recordArtifact,
   "knowledge:add": addKnowledge,
