@@ -393,11 +393,13 @@ async function pushCandidate(candidate) {
   const current = await config();
   const auth = await session();
   const organizationId = requireOrganization(current);
-  const existing = await authenticated(`/rest/v1/drama_learning_candidates?id=eq.${candidate.id}&select=id,status`);
+  const candidateKey = encodeURIComponent(candidate.id);
+  const existing = await authenticated(`/rest/v1/drama_learning_candidates?organization_id=eq.${organizationId}&submitted_by=eq.${auth.user.id}&client_candidate_key=eq.${candidateKey}&select=id,status`);
   if (existing?.length) return existing[0];
   const rows = await authenticated("/rest/v1/drama_learning_candidates?select=*", {
     method: "POST", prefer: "return=representation", body: {
-      id: candidate.id, organization_id: organizationId, project_key: candidate.project_id,
+      organization_id: organizationId, project_key: candidate.project_id,
+      client_candidate_key: candidate.id,
       submitted_by: auth.user.id, lane: candidate.lane, statement: candidate.statement,
       scope: candidate.scope, confidence: candidate.confidence,
       evidence_summary: candidate.evidence_summary, evidence_artifact_ids: candidate.evidence_artifact_ids,
