@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,6 +30,17 @@ try {
   assert.equal(run("status").local_candidates, 1);
   const persisted = JSON.parse(await readFile(path.join(root, "projects", "test-show", "approved-private.json"), "utf8"));
   assert.equal(persisted.rules[0].status, "human_approved");
+  const legacy = path.join(root, "legacy-runtime");
+  await mkdir(path.join(legacy, "data", "projects"), { recursive: true });
+  await mkdir(path.join(legacy, "learning", "projects", "legacy-show"), { recursive: true });
+  await writeFile(path.join(legacy, "package.json"), JSON.stringify({ name: "ai-drama-studio" }));
+  await writeFile(path.join(legacy, "data", "projects", "legacy-show.json"), JSON.stringify({ id: "legacy-show", title: "Legacy Show", rights_status: "authorized", current_head: "v2", locks: ["Keep reveal"], story_state: { target_market: "US" } }));
+  await writeFile(path.join(legacy, "learning", "projects", "legacy-show", "approved-preferences.json"), JSON.stringify({ rules: [{ id: "legacy-rule", statement: "Keep the reveal", status: "approved_private" }] }));
+  const migrated = run("migrate:legacy", "--from", legacy);
+  assert.equal(migrated.projects, 1);
+  assert.equal(migrated.private_rules, 1);
+  const legacyApproved = JSON.parse(await readFile(path.join(root, "projects", "legacy-show", "approved-private.json"), "utf8"));
+  assert.equal(legacyApproved.rules[0].status, "human_approved");
   console.log("AI Drama Studio harness: PASS");
 } finally {
   await rm(root, { recursive: true, force: true });
