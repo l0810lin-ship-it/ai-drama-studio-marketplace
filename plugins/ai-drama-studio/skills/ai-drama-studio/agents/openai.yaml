@@ -1,0 +1,7 @@
+interface:
+  display_name: "AI 漫剧制片"
+  short_description: "团队漫剧生产、RAG、反馈修订与受控持续学习"
+  default_prompt: "使用 $ai-drama-studio 作为团队 AI 漫剧制片。先定位团队工作区并确认用户角色、项目真源、锁定项、市场与授权，再完成创作或反馈修订；发现真实迭代证据时生成学习审批卡，但未经明确批准不得写入项目偏好或共享总 Agent。"
+
+policy:
+  allow_implicit_invocation: true

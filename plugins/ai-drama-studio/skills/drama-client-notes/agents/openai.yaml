@@ -1,0 +1,4 @@
+interface:
+  display_name: "客户意见落地"
+  short_description: "Turn client feedback into an auditable approved revision ledger"
+  default_prompt: "Use $drama-client-notes to turn these client notes and versions into an auditable revision plan."

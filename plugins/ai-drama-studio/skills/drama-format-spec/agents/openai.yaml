@@ -1,0 +1,4 @@
+interface:
+  display_name: "漫剧格式规范"
+  short_description: "Validate drama documents against active project format profiles"
+  default_prompt: "Use $drama-format-spec to validate this script against the active project format profile."

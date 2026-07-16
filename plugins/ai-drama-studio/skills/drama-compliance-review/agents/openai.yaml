@@ -1,0 +1,4 @@
+interface:
+  display_name: "平台合规审查"
+  short_description: "Review drama content against current versioned platform policies"
+  default_prompt: "Use $drama-compliance-review to assess this script against the selected platform policy profile."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "双语本地化"
+  short_description: "Localize bilingual scripts with locked terminology and formats"
+  default_prompt: "Use $drama-bilingual-localization to plan and produce this bilingual delivery from the locked source."

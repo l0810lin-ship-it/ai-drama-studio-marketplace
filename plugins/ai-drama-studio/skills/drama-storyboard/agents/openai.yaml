@@ -1,0 +1,4 @@
+interface:
+  display_name: "漫剧分镜"
+  short_description: "Convert locked scripts into asset-linked production shot lists"
+  default_prompt: "Use $drama-storyboard to convert this locked episode into a production-ready shot list."

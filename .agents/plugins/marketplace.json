@@ -1,0 +1,20 @@
+{
+  "name": "ai-drama-team",
+  "interface": {
+    "displayName": "AI Drama Team"
+  },
+  "plugins": [
+    {
+      "name": "ai-drama-studio",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ai-drama-studio"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

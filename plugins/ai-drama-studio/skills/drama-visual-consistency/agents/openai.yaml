@@ -1,0 +1,4 @@
+interface:
+  display_name: "视觉一致性"
+  short_description: "Create versioned character scene prop and style asset bibles"
+  default_prompt: "Use $drama-visual-consistency to build a versioned visual asset bible for this project."

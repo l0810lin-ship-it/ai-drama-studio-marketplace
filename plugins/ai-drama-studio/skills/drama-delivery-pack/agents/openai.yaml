@@ -1,0 +1,4 @@
+interface:
+  display_name: "漫剧交付封装"
+  short_description: "Build clean traceable deliveries from the approved head version"
+  default_prompt: "Use $drama-delivery-pack to prepare a clean delivery package from the current head version."

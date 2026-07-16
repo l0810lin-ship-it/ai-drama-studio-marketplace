@@ -1,0 +1,7 @@
+interface:
+  display_name: "AI 漫剧制片"
+  short_description: "真源驱动的漫剧创作、改编、本地化与客服反馈修订"
+  default_prompt: "使用 $ai-drama-producer 作为我的 AI 漫剧制片。先确认项目真源、锁定项、目标市场与本次工作流；再从 RAG 检索 SOP 和技能资料，产出可审阅的立项、世界观、集纲、任务卡、剧本、本地化、Pitch 或修订提案。未经批准的客服反馈不得直接改稿。"
+
+policy:
+  allow_implicit_invocation: true
