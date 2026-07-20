@@ -1,0 +1,36 @@
+project_id: ""
+source_version: ""
+source_language: ""
+target_language: ""
+target_market: ""
+audience: ""
+platform: ""
+era_and_place: ""
+project_bible_path: ""
+worldbuilding_sources: []
+locked_termbase_path: ""
+format_reference_path: ""
+translate:
+  dialogue: true
+  scene_headings: null
+  action_lines: null
+  character_cues: null
+  on_screen_text: true
+  sms_and_chat: true
+  social_and_email: true
+  letters_contracts_signage: true
+os_vo_policy: ""
+layout_limits:
+  subtitle: ""
+  chat_bubble: ""
+  ui_or_prop: ""
+communication_channels:
+  allowed: []
+  restricted: []
+  forbidden: []
+approval_required_for:
+  - source_text_repairs
+  - worldbuilding_conflicts
+  - cultural_replacements
+  - signature_line_changes
+notes: ""

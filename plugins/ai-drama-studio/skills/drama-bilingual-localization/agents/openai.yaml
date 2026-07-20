@@ -1,4 +1,4 @@
 interface:
   display_name: "双语本地化"
-  short_description: "Localize bilingual scripts with locked terminology and formats"
-  default_prompt: "Use $drama-bilingual-localization to plan and produce this bilingual delivery from the locked source."
+  short_description: "按世界观翻译对白、短信、屏幕文字与双语交付"
+  default_prompt: "Use $drama-bilingual-localization to localize this locked script, first loading the Project Bible and then translating dialogue plus every plot-bearing SMS, chat, phone-screen, UI, and prop text with a traceable ledger."
