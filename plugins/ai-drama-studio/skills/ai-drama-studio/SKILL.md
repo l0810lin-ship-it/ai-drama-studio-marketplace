@@ -25,6 +25,19 @@ description: >-
 3. 把客户原文、IP 细节、商业信息和客户偏好限制在对应项目。
 4. 把 RAG 当作带来源的参考层，不得让过期、未批准或跨项目材料覆盖真源。
 
+## 连接数据源与分层
+
+当工作区存在 Google Sheet/Drive 同步层时，先运行或读取同步结果，而不是直接把资料塞进 RAG：
+
+1. 手动同步命令是 `pnpm drive:sync`；只检查访问与变更时用 `pnpm drive:sync -- --dry-run`。
+2. Sheet 剧单是 `project_catalog`，用于判断项目、题材、集数、简介、卡点、链接和对标剧。
+3. Drive 剧本、集纲、Pitch、本地化稿、交付稿和客户批注是 `project_artifact`，只能作为项目私有证据或版本谱系。
+4. 通用 Skill、SOP、方法论和提示词是 `method_or_skill_source`，审核后才可进入普通 RAG。
+5. 海外短剧研究和类型世界观资料是 `market_or_worldbuilding_reference`，必须标注适用题材、来源状态和不确定项。
+6. 文件必须登记项目归属、文件类型、版本角色、题材系统、工作流映射、可学习/不可学习状态。冲突时阻塞，不由模型自行选择。
+
+如果用户要求“根据 Drive 真实文件迭代 Skill”，必须递归浏览项目文件夹，而不是只看根目录或 Sheet。真实项目文件夹通常包含原稿、当前稿、修改稿、客户批注稿、本地化稿、交付稿、对标 OCR、复盘报告、重复副本和分段文件；这些材料要先变成版本图和证据摘要，再沉淀为通用 Skill 规则。客户剧本全文仍不得写入共享 Skill。
+
 ## 创作工作流
 
 支持立项/世界观、梗概、季纲/分集卡、单集剧本、钩子、授权改编、本地化、翻译/自然化、Pitch、反馈修订。
@@ -37,7 +50,9 @@ description: >-
 
 ## 专项能力路由
 
-根据任务调用插件内专项 Skill：客户意见用 `$drama-client-notes`；格式用 `$drama-format-spec`；交付用 `$drama-delivery-pack`；双语用 `$drama-bilingual-localization`；视觉资产用 `$drama-visual-consistency`；分镜用 `$drama-storyboard`；合规用 `$drama-compliance-review`。专项规则不得覆盖项目真源、锁定项或客户活动配置。
+根据任务调用插件内专项 Skill：版本谱系用 `$drama-project-version-graph`；初稿定稿对照用 `$drama-draft-comparison`；钩子节奏精修用 `$drama-hook-pacing-polish`；客户意见用 `$drama-client-notes`；格式用 `$drama-format-spec`；交付用 `$drama-delivery-pack`；双语用 `$drama-bilingual-localization`；Pitch 和市场风格用 `$drama-pitch-market-style`；授权改编用 `$drama-authorized-adaptation`；对标 OCR 用 `$drama-benchmark-ocr-analysis`；视觉资产用 `$drama-visual-consistency`；分镜用 `$drama-storyboard`；合规用 `$drama-compliance-review`。专项规则不得覆盖项目真源、锁定项或客户活动配置。
+
+如果任务同时涉及 Pitch、hook/pacing、story continuity、authorized adaptation、market-style 或 Project Bible 维护，先在主 Skill 输出任务拆分建议；不要让 Producer Skill 一次性吞掉所有工作流而失去版本、权限和审批边界。涉及真实 Drive 文件时，先跑版本谱系和必要的对照/OCR 分析，再进入写作或修订。
 
 ## 团队迭代学习
 
@@ -56,3 +71,5 @@ description: >-
 ## 输出契约
 
 列出真源、锁定项、RAG 来源、已批准学习规则和待确认事实。涉及修改时附变更日志；涉及学习时附证据、适用范围、反例、置信度和状态。
+
+涉及 Drive/Sheet 数据源时，额外列出使用的 registry 项、文件层级、版本角色和提取状态。项目资产待提取、版本冲突或来源权威不明时输出 `blocked` 或 `needs_human_confirmation`。

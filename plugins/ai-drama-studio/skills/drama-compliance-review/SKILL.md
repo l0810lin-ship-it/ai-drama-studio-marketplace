@@ -18,6 +18,8 @@ description: >-
 2. 优先读取官方、当前政策；无法验证时标记 `policy_unverified`，不得承诺可过审。
 3. 使用版本化规则包，结构见 [references/policy-profile-schema.md](references/policy-profile-schema.md)。
 
+缺少平台、地区、政策版本、内容形态或当前剧本版本时，输出 `blocked`。政策过期或来源非官方时，最多给预审风险，不得给“可发布/可过审”的结论。
+
 ## 审查
 
 - 逐条记录位置、原文、风险类别、政策依据、置信度和建议处理。
@@ -30,3 +32,8 @@ description: >-
 
 输出风险台账、政策来源与日期、建议方案、需人工决定项和残余风险。平台规则更新属于 RAG/规则包更新；只有稳定的审查流程可以进入共享 Skill。
 
+## Eval 钩子
+
+- blocked：缺少平台/地区/政策版本/剧本版本时停止。
+- policy currency：过期或非官方政策只能标 `policy_unverified`。
+- residual risk：修改建议后仍需列残余风险，不能把合规审查写成绝对保证。
